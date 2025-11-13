@@ -1,0 +1,89 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop, claude/** ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-macos:
+    name: Test on macOS
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Show Swift version
+      run: swift --version
+
+    - name: Build package
+      run: swift build
+
+    - name: Run tests
+      run: swift test --parallel
+
+  test-ios:
+    name: Test on iOS Simulator
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+    - name: List available simulators
+      run: xcrun simctl list devices available
+
+    - name: Build for iOS
+      run: |
+        xcodebuild build-for-testing \
+          -scheme Telemetry \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+          -skipPackagePluginValidation
+
+    - name: Run iOS tests
+      run: |
+        xcodebuild test \
+          -scheme Telemetry \
+          -destination 'platform=iOS Simulator,name=iPhone 15,OS=17.5' \
+          -skipPackagePluginValidation
+
+  code-coverage:
+    name: Code Coverage
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+    - name: Run tests with coverage
+      run: swift test --enable-code-coverage
+
+    - name: Generate coverage report
+      run: |
+        xcrun llvm-cov export \
+          .build/debug/TelemetryPackageTests.xctest/Contents/MacOS/TelemetryPackageTests \
+          -instr-profile=.build/debug/codecov/default.profdata \
+          -format=lcov > coverage.lcov || true
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./coverage.lcov
+        fail_ci_if_error: false
+        verbose: true
+      continue-on-error: true
