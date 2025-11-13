@@ -1,0 +1,24 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Xcode
+*.xcodeproj
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+xcuserdata/
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+
+# Tuist
+Derived/
+*.xcodeproj/
+*.xcworkspace/
+
+# OS
+.DS_Store
