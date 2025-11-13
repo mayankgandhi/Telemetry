@@ -61,7 +61,41 @@ All other operations use the fire-and-forget synchronous methods for best perfor
 
 ## Installation
 
-The Telemetry framework is already included in the Monorepo workspace. To use it in your app:
+### Swift Package Manager
+
+Add Telemetry to your project using Swift Package Manager:
+
+#### In Xcode:
+
+1. File → Add Package Dependencies
+2. Enter the repository URL: `https://github.com/yourusername/Telemetry.git`
+3. Select the version you want to use
+4. Add the package to your target
+
+#### In Package.swift:
+
+Add Telemetry as a dependency to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/yourusername/Telemetry.git", from: "1.0.0")
+]
+```
+
+Then add it to your target dependencies:
+
+```swift
+.target(
+    name: "YourTarget",
+    dependencies: [
+        .product(name: "Telemetry", package: "Telemetry")
+    ]
+)
+```
+
+### Tuist/Monorepo Integration
+
+If you're using Tuist or have Telemetry in a monorepo workspace:
 
 1. Add Telemetry as a dependency in your `Project.swift`:
 
@@ -71,7 +105,7 @@ dependencies: [
 ]
 ```
 
-2. Import the framework:
+### Import
 
 ```swift
 import Telemetry
