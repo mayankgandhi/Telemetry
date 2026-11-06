@@ -212,12 +212,13 @@ public final class TelemetryService: Sendable {
 
     /// Get a feature flag payload value as a String (async, blocks until result is available)
     /// - Parameter key: Feature flag key
-    /// - Returns: Feature flag payload value as String, or empty string if not found
+    /// - Returns: The payload as a String, or nil if there is no payload for `key`, the
+    ///   payload is not a String, or no provider is configured.
     /// - Note: This method blocks waiting for the result. Consider caching payload values for performance.
     public func getFeatureFlagPayloadString(key: String) async -> String? {
         guard let provider = await getProvider() else {
             logWarning("Provider not configured. Call configure(provider:) first.")
-            return ""
+            return nil
         }
 
         return await provider.getFeatureFlagPayloadString(key: key)

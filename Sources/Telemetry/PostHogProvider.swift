@@ -129,9 +129,13 @@ public final class PostHogProvider: TelemetryProvider, Sendable {
     public nonisolated func getFeatureFlagPayloadString(key: String) async -> String? {
         await ensureConfigured()
 
-        // Get payload and convert to string if possible
+        // Get payload and convert to string if possible. An absent payload is nil, not ""
+        // — the return type is `String?`, so nil is how "no value" is spelled. Returning
+        // "" here made a missing payload indistinguishable from one set to the empty
+        // string, while a present-but-non-String payload returned nil: the two cases were
+        // the wrong way round.
         guard let payload = PostHogSDK.shared.getFeatureFlagPayload(key) else {
-            return ""
+            return nil
         }
 
         return payload as? String

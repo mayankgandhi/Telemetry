@@ -26,7 +26,9 @@ public protocol TelemetryProvider: Sendable {
 
     /// Get a feature flag payload value as a String
     /// - Parameter key: The feature flag key
-    /// - Returns: The payload value as a String, or empty string if not found
+    /// - Returns: The payload value as a String, or nil if there is no payload for `key`
+    ///   or the payload is not a String. An empty return value means the payload itself
+    ///   was the empty string.
     func getFeatureFlagPayloadString(key: String) async -> String?
 
     /// Reset the current user session

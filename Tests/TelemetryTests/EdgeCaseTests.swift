@@ -363,7 +363,19 @@ struct EdgeCaseTests {
         let payload = await service.getFeatureFlagPayloadString(key: "missing_payload")
 
         // Then
-        #expect(payload == "")
+        #expect(payload == nil)
+    }
+
+    @Test("Feature flag payload returns nil when no provider is configured")
+    func featureFlagPayloadWithoutProvider() async {
+        // Given - a service that was never configured
+        let service = TelemetryService()
+
+        // When
+        let payload = await service.getFeatureFlagPayloadString(key: "any_flag")
+
+        // Then - nil, not "", so callers can tell "unavailable" from "empty payload"
+        #expect(payload == nil)
     }
 
     @Test("Properties with numeric keys are handled correctly")
