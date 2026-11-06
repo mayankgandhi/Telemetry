@@ -40,30 +40,30 @@ jobs:
         xcodebuild -version
         swift --version
 
-    - name: List available simulators
-      run: xcrun simctl list devices available
+    - name: Show build destinations
+      run: xcodebuild -showdestinations -scheme Telemetry -skipPackagePluginValidation
 
     # `xcodebuild test` rejects a generic destination ("Tests must be run on a concrete
     # device"), and pinning a model/OS pair breaks whenever the runner image changes. Resolve
-    # the newest available iPhone simulator on the image instead.
+    # the newest iPhone simulator at runtime instead.
     #
-    # simctl enumerates runtimes in arbitrary order, so sort on the parsed iOS version rather
-    # than taking the last key - otherwise this silently picks an older runtime than available.
+    # Ask xcodebuild rather than simctl. `simctl list devices available` reports runtimes from
+    # every installed Xcode, so it can name a simulator the *selected* Xcode has no SDK for -
+    # which is how the build step failed while this one succeeded. `-showdestinations` lists
+    # only what the selected toolchain can actually build for.
     - name: Select an iOS simulator
       id: simulator
       run: |
-        udid=$(xcrun simctl list devices available --json | jq -r '
-          [ .devices | to_entries[]
-            | select(.key | test("iOS"))
-            | (.key | capture("iOS-(?<maj>[0-9]+)-(?<min>[0-9]+)")
-                    | (.maj | tonumber) * 1000 + (.min | tonumber)) as $version
-            | .value[] | select(.name | startswith("iPhone")) | {version: $version, udid}
-          ] | sort_by(.version) | last | .udid // empty')
-        if [ -z "$udid" ] || [ "$udid" = "null" ]; then
-          echo "::error::No available iPhone simulator on this runner image"
+        destination=$(xcodebuild -showdestinations -scheme Telemetry -skipPackagePluginValidation 2>/dev/null \
+          | grep -E 'platform:iOS Simulator, arch:[^,]*, id:[^,]*, OS:[^,]*, name:iPhone' \
+          | sed -E 's/.*id:([^,]*), OS:([^,]*), name:(.*) \}.*/\2 \1 \3/' \
+          | sort -V | tail -1)
+        udid=$(printf '%s' "$destination" | awk '{print $2}')
+        if [ -z "$udid" ]; then
+          echo "::error::No buildable iPhone simulator destination on this runner image"
           exit 1
         fi
-        echo "Using simulator $udid"
+        echo "Using simulator: $destination"
         echo "udid=$udid" >> "$GITHUB_OUTPUT"
 
     - name: Build for iOS
