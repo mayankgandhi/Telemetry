@@ -71,16 +71,29 @@ struct PerformanceTests {
             "dict": ["key": "value"]
         ]
 
-        // When - measure time to convert properties 1000 times
+        // When - measure a batch large enough that scheduler noise does not dominate.
+        //
+        // At 1000 iterations this measured ~0.005s, small enough that CPU contention from the
+        // other 101 tests running in parallel moved it by 2-3x and no threshold was both
+        // stable and meaningful. 10,000 iterations costs ~0.2s and separates signal from
+        // noise by roughly 50x (see below).
         let start = Date()
-        for _ in 0..<1000 {
-            // Access private method through reflection for testing
+        for _ in 0..<10_000 {
             _ = provider.convertProperties(properties)
         }
         let duration = Date().timeIntervalSince(start)
 
-        // Then - should complete quickly (< 100ms for 1000 conversions)
-        #expect(duration < 0.1) // Less than 100ms
+        // Then - guard against an order-of-magnitude regression, not a precise budget.
+        //
+        // Measured in an unoptimized `swift test --parallel` build: 0.12-0.23s as written,
+        // versus 7.8-8.7s if the cached `ISO8601DateFormatter` is replaced by one allocation
+        // per date value - the regression this test exists to catch. 2s sits well clear of
+        // both, leaving room for a slower shared CI runner without going quiet on the bug.
+        //
+        // The previous 0.1s bound was calibrated against a since-removed copy of
+        // `convertProperties` in this file that did allocate a formatter per call, so it sat
+        // right on that copy's measurement and failed about half the time.
+        #expect(duration < 2.0)
     }
 
     @Test("Provider configuration is thread-safe")
@@ -205,38 +218,5 @@ struct PerformanceTests {
         await mockProvider.clearAll()
         let clearedEvents = await mockProvider.trackedEvents
         #expect(clearedEvents.isEmpty)
-    }
-}
-
-// Extension to expose private method for testing
-extension PostHogProvider {
-    func convertProperties(_ properties: [String: any Sendable]) -> [String: Any] {
-        // This is the same implementation as the private method
-        guard !properties.isEmpty else { return [:] }
-
-        var result = [String: Any]()
-        result.reserveCapacity(properties.count)
-
-        for (key, value) in properties {
-            switch value {
-            case let stringValue as String:
-                result[key] = stringValue
-            case let intValue as Int:
-                result[key] = intValue
-            case let doubleValue as Double:
-                result[key] = doubleValue
-            case let boolValue as Bool:
-                result[key] = boolValue
-            case let dateValue as Date:
-                result[key] = ISO8601DateFormatter().string(from: dateValue)
-            case let arrayValue as [Any]:
-                result[key] = arrayValue
-            case let dictValue as [String: Any]:
-                result[key] = dictValue
-            default:
-                result[key] = "\(value)"
-            }
-        }
-        return result
     }
 }

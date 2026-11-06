@@ -9,8 +9,9 @@ import PostHog
 /// - Cached formatter: ISO8601DateFormatter is reused for better performance
 /// - Nonisolated: Methods can be called from any thread without actor overhead
 public final class PostHogProvider: TelemetryProvider, Sendable {
-    private let apiKey: String
-    private let host: String
+    // `internal` rather than `private` so the test target can assert what `init` stored.
+    let apiKey: String
+    let host: String
 
     // Actor for thread-safe configuration state
     private actor ConfigState {
@@ -149,7 +150,9 @@ public final class PostHogProvider: TelemetryProvider, Sendable {
 
     /// Convert Sendable properties to [String: Any] for PostHog compatibility
     /// - Note: Optimized with cached date formatter for better performance
-    private nonisolated func convertProperties(_ properties: [String: any Sendable]) -> [String: Any] {
+    /// - Note: `internal` rather than `private` so the test target can exercise this exact
+    ///   implementation through `@testable import`, instead of a copy that can drift from it.
+    nonisolated func convertProperties(_ properties: [String: any Sendable]) -> [String: Any] {
         guard !properties.isEmpty else { return [:] }
 
         var result = [String: Any]()
