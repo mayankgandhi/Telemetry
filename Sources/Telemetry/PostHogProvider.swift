@@ -103,8 +103,20 @@ public final class PostHogProvider: TelemetryProvider, Sendable {
     public nonisolated func getFeatureFlag(key: String, defaultValue: Bool) async -> Bool {
         await ensureConfigured()
 
-        // Feature flag access is synchronous and thread-safe
-        return PostHogSDK.shared.isFeatureEnabled(key) ?? defaultValue
+        // `isFeatureEnabled` returns a non-optional `Bool`: it reports `false` both for a
+        // flag that is genuinely off and for one it could not resolve at all (unknown key,
+        // or flags not yet loaded from the server). Coalescing its result could therefore
+        // never reach `defaultValue` — the compiler flagged the right-hand side as unused.
+        // `getFeatureFlagResult` returns nil in exactly those unresolvable cases, which is
+        // what `defaultValue` is for.
+        //
+        // Feature flag access is synchronous and thread-safe.
+        guard let result = PostHogSDK.shared.getFeatureFlagResult(key) else {
+            return defaultValue
+        }
+
+        // `enabled` is already true for a multivariate flag that resolved to a variant.
+        return result.enabled
     }
 
     public nonisolated func getFeatureFlagPayload(key: String) async -> Any? {

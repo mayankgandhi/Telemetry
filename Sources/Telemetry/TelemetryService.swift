@@ -190,7 +190,9 @@ public final class TelemetryService: Sendable {
     /// Get a feature flag value (async, blocks until result is available)
     /// - Parameters:
     ///   - key: Feature flag key
-    ///   - defaultValue: Default value if flag is not found
+    ///   - defaultValue: Value to return when the flag cannot be resolved — no provider
+    ///     configured, an unknown key, or flags still loading. A flag that resolves to
+    ///     `false` returns `false`, not `defaultValue`.
     /// - Returns: Feature flag value (true/false)
     /// - Note: This method blocks waiting for the result. Consider caching flag values for performance.
     public func getFeatureFlag(
