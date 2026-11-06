@@ -74,10 +74,41 @@ jobs:
             }' \
           | sort -V | tail -1)
         udid=$(printf '%s' "$destination" | awk '{print $2}')
+
+        # `-showdestinations` only lists simulators that already exist in the runner's device
+        # set, and that set is not guaranteed to be populated: some `macos-latest` images come
+        # up with no concrete simulators at all, so the list is nothing but `placeholder`
+        # entries. Create a device from an installed runtime rather than depending on the image
+        # having pre-created one. Observed on run 42292880978, where this same commit passed on
+        # one runner and found zero simulators - iPhone *and* iPad - on another.
         if [ -z "$udid" ]; then
-          echo "::error::No buildable iPhone simulator destination on this runner image"
-          exit 1
+          echo "No concrete iPhone simulator in the device set; creating one."
+          echo "--- installed iOS runtimes ---"
+          xcrun simctl list runtimes
+          runtime=$(xcrun simctl list runtimes --json \
+            | jq -r '[.runtimes[] | select(.platform == "iOS" and .isAvailable)]
+                     | sort_by(.version | split(".") | map(tonumber)) | last | .identifier // empty')
+          if [ -z "$runtime" ]; then
+            echo "::error::No installed iOS simulator runtime on this runner image"
+            exit 1
+          fi
+          # simctl lists device types newest first, so take them in natural order and stop at
+          # the first one this runtime accepts (older runtimes reject newer models).
+          while read -r devicetype; do
+            if udid=$(xcrun simctl create ci-iphone "$devicetype" "$runtime" 2>/dev/null); then
+              echo "Created $devicetype on $runtime"
+              break
+            fi
+            udid=""
+          done < <(xcrun simctl list devicetypes --json \
+                     | jq -r '.devicetypes[] | select(.name | test("^iPhone")) | .identifier')
+          if [ -z "$udid" ]; then
+            echo "::error::No iPhone device type compatible with $runtime"
+            exit 1
+          fi
+          destination="(created) $udid"
         fi
+
         echo "Using simulator: iOS $destination"
         echo "udid=$udid" >> "$GITHUB_OUTPUT"
 
