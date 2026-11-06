@@ -18,7 +18,7 @@ struct EdgeCaseTests {
         service.flush()
 
         // Wait for background tasks
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then - No crash occurred
         #expect(true)
@@ -54,7 +54,7 @@ struct EdgeCaseTests {
 
         // Then - Should handle gracefully
         service.track(event: "test_event")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         let events = await provider3.trackedEvents
         #expect(events.count >= 0) // Provider 3 might or might not have the event
@@ -72,7 +72,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: "test_event", properties: properties)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -92,7 +92,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: "test_event", properties: properties)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -109,7 +109,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: "")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -126,7 +126,7 @@ struct EdgeCaseTests {
 
         // When
         service.identify(userId: "")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let users = await mockProvider.identifiedUsers
@@ -143,7 +143,7 @@ struct EdgeCaseTests {
 
         // When
         service.screen(screen: "")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let screens = await mockProvider.trackedScreens
@@ -162,7 +162,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: longEventName)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -181,7 +181,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: specialEventName)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -204,7 +204,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: "test_event", properties: properties)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -230,7 +230,7 @@ struct EdgeCaseTests {
         }
 
         // Wait for all background tasks
-        try? await Task.sleep(for: .seconds(2))
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
 
         // Then - All 500 events should be tracked
         let events = await mockProvider.trackedEvents
@@ -381,7 +381,7 @@ struct EdgeCaseTests {
 
         // When
         service.track(event: "test_event", properties: properties)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents
@@ -401,7 +401,7 @@ struct EdgeCaseTests {
         service.track(event: "   ")
         service.identify(userId: "   ")
         service.screen(screen: "   ")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let events = await mockProvider.trackedEvents

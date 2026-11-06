@@ -24,7 +24,7 @@ struct PerformanceTests {
         #expect(duration < 0.01) // Less than 10ms for 100 calls
 
         // Wait for background tasks to complete
-        try? await Task.sleep(for: .seconds(1))
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
 
         // Verify all events were tracked
         let trackedEvents = await mockProvider.trackedEvents
@@ -50,7 +50,7 @@ struct PerformanceTests {
         }
 
         // Wait for all background tasks to complete
-        try? await Task.sleep(for: .seconds(1))
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
 
         // Then - all 100 events should be tracked without race conditions
         let trackedEvents = await mockProvider.trackedEvents
@@ -113,7 +113,7 @@ struct PerformanceTests {
 
         // Then - configuration should succeed without crashes or race conditions
         service.track(event: "test_event")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         let trackedEvents = await mockProvider.trackedEvents
         #expect(trackedEvents.count == 1)
@@ -141,7 +141,7 @@ struct PerformanceTests {
         #expect(duration < 0.005) // Less than 5ms
 
         // Wait for background processing
-        try? await Task.sleep(for: .milliseconds(200))
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         // Verify event was tracked
         let trackedEvents = await mockProvider.trackedEvents
@@ -165,7 +165,7 @@ struct PerformanceTests {
         #expect(duration < 0.001) // Less than 1ms
 
         // Wait for background task
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Verify identification occurred
         let identifiedUsers = await mockProvider.identifiedUsers
@@ -188,7 +188,7 @@ struct PerformanceTests {
         #expect(duration < 0.001) // Less than 1ms
 
         // Wait for background task
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Verify screen was tracked
         let trackedScreens = await mockProvider.trackedScreens
@@ -208,7 +208,7 @@ struct PerformanceTests {
         }
 
         // Wait for background tasks
-        try? await Task.sleep(for: .seconds(2))
+        try? await Task.sleep(nanoseconds: 2_000_000_000)
 
         // Then - all events should be recorded
         let trackedEvents = await mockProvider.trackedEvents
