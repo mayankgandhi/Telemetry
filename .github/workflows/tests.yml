@@ -51,19 +51,34 @@ jobs:
     # every installed Xcode, so it can name a simulator the *selected* Xcode has no SDK for -
     # which is how the build step failed while this one succeeded. `-showdestinations` lists
     # only what the selected toolchain can actually build for.
+    # Parse by key rather than by position: the field list varies across Xcode versions (newer
+    # ones add `arch:`), so a fixed-order regex matches locally and silently finds nothing on
+    # the runner. Read both streams for the same reason.
     - name: Select an iOS simulator
       id: simulator
       run: |
-        destination=$(xcodebuild -showdestinations -scheme Telemetry -skipPackagePluginValidation 2>/dev/null \
-          | grep -E 'platform:iOS Simulator, arch:[^,]*, id:[^,]*, OS:[^,]*, name:iPhone' \
-          | sed -E 's/.*id:([^,]*), OS:([^,]*), name:(.*) \}.*/\2 \1 \3/' \
+        destination=$(xcodebuild -showdestinations -scheme Telemetry -skipPackagePluginValidation 2>&1 \
+          | grep 'platform:iOS Simulator' \
+          | grep 'name:iPhone' \
+          | grep -v 'placeholder' \
+          | sed -E 's/^[[:space:]]*\{[[:space:]]*//; s/[[:space:]]*\}[[:space:]]*$//' \
+          | awk -F', *' '{
+              id=""; os="";
+              for (i = 1; i <= NF; i++) {
+                key = substr($i, 1, index($i, ":") - 1);
+                val = substr($i, index($i, ":") + 1);
+                if (key == "id") id = val;
+                else if (key == "OS") os = val;
+              }
+              if (id != "" && os != "") print os, id;
+            }' \
           | sort -V | tail -1)
         udid=$(printf '%s' "$destination" | awk '{print $2}')
         if [ -z "$udid" ]; then
           echo "::error::No buildable iPhone simulator destination on this runner image"
           exit 1
         fi
-        echo "Using simulator: $destination"
+        echo "Using simulator: iOS $destination"
         echo "udid=$udid" >> "$GITHUB_OUTPUT"
 
     - name: Build for iOS
