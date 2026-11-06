@@ -122,8 +122,12 @@ public final class PostHogProvider: TelemetryProvider, Sendable {
     public nonisolated func getFeatureFlagPayload(key: String) async -> Any? {
         await ensureConfigured()
 
-        // Feature flag payload access is synchronous and thread-safe
-        return PostHogSDK.shared.getFeatureFlagPayload(key)
+        // `getFeatureFlagPayload` is deprecated. It is defined as exactly this call, so
+        // `sendFeatureFlagEvent: false` keeps the lookup silent as before — reading a
+        // payload must not start emitting $feature_flag_called events.
+        //
+        // Feature flag payload access is synchronous and thread-safe.
+        return PostHogSDK.shared.getFeatureFlagResult(key, sendFeatureFlagEvent: false)?.payload
     }
 
     public nonisolated func getFeatureFlagPayloadString(key: String) async -> String? {
@@ -134,7 +138,10 @@ public final class PostHogProvider: TelemetryProvider, Sendable {
         // "" here made a missing payload indistinguishable from one set to the empty
         // string, while a present-but-non-String payload returned nil: the two cases were
         // the wrong way round.
-        guard let payload = PostHogSDK.shared.getFeatureFlagPayload(key) else {
+        //
+        // `sendFeatureFlagEvent: false` matches the deprecated `getFeatureFlagPayload`
+        // this replaces, so event volume is unchanged.
+        guard let payload = PostHogSDK.shared.getFeatureFlagResult(key, sendFeatureFlagEvent: false)?.payload else {
             return nil
         }
 
