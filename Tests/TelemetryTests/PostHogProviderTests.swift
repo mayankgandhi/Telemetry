@@ -10,8 +10,10 @@ struct PostHogProviderTests {
         // Given & When
         let provider = PostHogProvider(apiKey: "test_api_key")
 
-        // Then - We can't directly test private properties, but we can verify initialization succeeds
-        #expect(provider != nil)
+        // Then - assert what `init` actually stored. (The previous `provider != nil` is always
+        // true for a non-optional value, so it asserted nothing and the compiler warned on it.)
+        #expect(provider.apiKey == "test_api_key")
+        #expect(provider.host == "https://us.i.posthog.com")
     }
 
     @Test("PostHogProvider initializes with API key and custom host")
@@ -22,8 +24,9 @@ struct PostHogProviderTests {
             host: "https://custom.posthog.com"
         )
 
-        // Then
-        #expect(provider != nil)
+        // Then - the custom host must override the default.
+        #expect(provider.apiKey == "test_api_key")
+        #expect(provider.host == "https://custom.posthog.com")
     }
 
     @Test("PostHogProvider converts string properties correctly")
@@ -118,9 +121,8 @@ struct PostHogProviderTests {
     func convertDictionaryProperty() {
         // Given
         let provider = PostHogProvider(apiKey: "test_key")
-        let properties: [String: any Sendable] = [
-            "metadata": ["key": "value", "count": 42]
-        ]
+        let metadata: [String: any Sendable] = ["key": "value", "count": 42]
+        let properties: [String: any Sendable] = ["metadata": metadata]
 
         // When
         let converted = provider.convertProperties(properties)
@@ -298,7 +300,7 @@ struct PostHogProviderTests {
     func convertEmptyArray() {
         // Given
         let provider = PostHogProvider(apiKey: "test_key")
-        let properties: [String: any Sendable] = ["emptyArray": []]
+        let properties: [String: any Sendable] = ["emptyArray": [] as [any Sendable]]
 
         // When
         let converted = provider.convertProperties(properties)
@@ -319,26 +321,47 @@ struct PostHogProviderTests {
         ]
 
         // When - Convert from multiple threads simultaneously
-        await withTaskGroup(of: [String: Any].self) { group in
+        //
+        // `convertProperties` returns `[String: Any]`, which is not `Sendable` and so cannot
+        // be a task group's result type under Swift 6 strict concurrency. Each child task
+        // therefore reads the values it cares about and returns a `Sendable` projection,
+        // keeping the non-Sendable dictionary inside the task that created it.
+        let results = await withTaskGroup(of: ConvertedProperties.self) { group in
             for _ in 0..<10 {
                 group.addTask {
-                    provider.convertProperties(properties)
+                    ConvertedProperties(provider.convertProperties(properties))
                 }
             }
 
-            // Collect all results
-            var results: [[String: Any]] = []
+            var results: [ConvertedProperties] = []
             for await result in group {
                 results.append(result)
             }
+            return results
+        }
 
-            // Then - All conversions should succeed with same values
-            #expect(results.count == 10)
-            for result in results {
-                #expect(result["key1"] as? String == "value1")
-                #expect(result["key2"] as? Int == 42)
-                #expect(result["key3"] as? Bool == true)
-            }
+        // Then - All conversions should succeed with same values
+        #expect(results.count == 10)
+        #expect(results.allSatisfy { $0 == ConvertedProperties(key1: "value1", key2: 42, key3: true) })
+    }
+
+    /// `Sendable` projection of a converted property dictionary, used to carry conversion
+    /// results out of a child task without moving the non-`Sendable` `[String: Any]`.
+    private struct ConvertedProperties: Sendable, Equatable {
+        let key1: String?
+        let key2: Int?
+        let key3: Bool?
+
+        init(key1: String?, key2: Int?, key3: Bool?) {
+            self.key1 = key1
+            self.key2 = key2
+            self.key3 = key3
+        }
+
+        init(_ converted: [String: Any]) {
+            self.key1 = converted["key1"] as? String
+            self.key2 = converted["key2"] as? Int
+            self.key3 = converted["key3"] as? Bool
         }
     }
 }

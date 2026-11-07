@@ -15,7 +15,7 @@ struct TelemetryServiceTests {
         service.track(event: "button_tapped", properties: ["screen": "home"])
 
         // Give the background task time to complete
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let trackedEvents = await mockProvider.trackedEvents
@@ -40,7 +40,7 @@ struct TelemetryServiceTests {
 
         // When
         service.track(event: event)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let trackedEvents = await mockProvider.trackedEvents
@@ -57,7 +57,7 @@ struct TelemetryServiceTests {
 
         // When
         service.identify(userId: "user123", properties: ["email": "test@example.com", "plan": "pro"])
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let identifiedUsers = await mockProvider.identifiedUsers
@@ -83,7 +83,7 @@ struct TelemetryServiceTests {
 
         // When
         service.identify(user: user)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let identifiedUsers = await mockProvider.identifiedUsers
@@ -100,7 +100,7 @@ struct TelemetryServiceTests {
 
         // When
         service.screen(screen: "HomeView", properties: ["section": "main"])
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let trackedScreens = await mockProvider.trackedScreens
@@ -125,7 +125,7 @@ struct TelemetryServiceTests {
 
         // When
         service.screen(screen: screen)
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // Then
         let trackedScreens = await mockProvider.trackedScreens
@@ -171,7 +171,7 @@ struct TelemetryServiceTests {
         await service.configureAsync(provider: mockProvider)
 
         service.track(event: "test_event")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100_000_000)
 
         // When - use async version to wait for completion
         await service.resetAsync()
@@ -210,7 +210,7 @@ struct TelemetryServiceTests {
         service.track(event: "event1")
         service.track(event: "event2")
         service.track(event: "event3")
-        try? await Task.sleep(for: .milliseconds(200))
+        try? await Task.sleep(nanoseconds: 200_000_000)
 
         // Then
         let trackedEvents = await mockProvider.trackedEvents

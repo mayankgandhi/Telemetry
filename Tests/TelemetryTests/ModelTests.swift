@@ -13,7 +13,9 @@ struct TelemetryEventTests {
         // Then
         #expect(event.name == "test_event")
         #expect(event.properties.isEmpty)
-        #expect(event.timestamp != nil)
+        // `timestamp` is a non-optional `Date`, so a nil check is always true and the compiler
+        // warns on it. Assert that it defaults to the current time instead.
+        #expect(abs(event.timestamp.timeIntervalSinceNow) < 5)
     }
 
     @Test("TelemetryEvent initializes with name and properties")

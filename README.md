@@ -95,13 +95,22 @@ Then add it to your target dependencies:
 
 ### Tuist/Monorepo Integration
 
-If you're using Tuist or have Telemetry in a monorepo workspace:
+Telemetry is a Swift package, so reference it by path rather than as a Tuist project.
 
-1. Add Telemetry as a dependency in your `Project.swift`:
+In a monorepo, point SwiftPM at the local checkout:
 
 ```swift
 dependencies: [
-    .project(target: "Telemetry", path: "../../Telemetry")
+    .package(path: "../../Telemetry")
+]
+```
+
+With Tuist 4, declare it in `Tuist/Package.swift` the same way, then reference it from your
+target as an external dependency:
+
+```swift
+dependencies: [
+    .external(name: "Telemetry")
 ]
 ```
 
