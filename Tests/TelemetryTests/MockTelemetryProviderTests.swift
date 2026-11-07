@@ -148,8 +148,8 @@ struct MockTelemetryProviderTests {
         #expect(payload == "test_payload")
     }
 
-    @Test("Mock provider returns empty string when feature flag payload not set")
-    func getFeatureFlagPayloadStringWithEmptyDefault() async {
+    @Test("Mock provider returns nil when feature flag payload not set")
+    func getFeatureFlagPayloadStringWhenUnset() async {
         // Given
         let mockProvider = MockTelemetryProvider()
 
@@ -157,7 +157,35 @@ struct MockTelemetryProviderTests {
         let payload = await mockProvider.getFeatureFlagPayloadString(key: "unknown_flag")
 
         // Then
-        #expect(payload == "")
+        #expect(payload == nil)
+    }
+
+    @Test("Mock provider distinguishes an empty payload from a missing one")
+    func getFeatureFlagPayloadStringEmptyIsNotMissing() async {
+        // Given - a payload deliberately set to the empty string
+        let mockProvider = MockTelemetryProvider()
+        await mockProvider.setFeatureFlagPayload("", forKey: "empty_flag")
+
+        // When
+        let empty = await mockProvider.getFeatureFlagPayloadString(key: "empty_flag")
+        let missing = await mockProvider.getFeatureFlagPayloadString(key: "absent_flag")
+
+        // Then - "" and nil are no longer the same answer
+        #expect(empty == "")
+        #expect(missing == nil)
+    }
+
+    @Test("Mock provider returns nil for a payload that is not a String")
+    func getFeatureFlagPayloadStringNonStringPayload() async {
+        // Given
+        let mockProvider = MockTelemetryProvider()
+        await mockProvider.setFeatureFlagPayload(42, forKey: "numeric_flag")
+
+        // When
+        let payload = await mockProvider.getFeatureFlagPayloadString(key: "numeric_flag")
+
+        // Then
+        #expect(payload == nil)
     }
 
     @Test("Mock provider reset clears all data")

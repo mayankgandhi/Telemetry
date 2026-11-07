@@ -18,13 +18,17 @@ public protocol TelemetryProvider: Sendable {
     /// Get a feature flag value
     /// - Parameters:
     ///   - key: The feature flag key
-    ///   - defaultValue: The default value if the flag is not found
+    ///   - defaultValue: The value to return when the flag cannot be resolved — an unknown
+    ///     key, or flags that have not finished loading yet. A flag that resolves to `false`
+    ///     returns `false`, not `defaultValue`.
     /// - Returns: The feature flag value (true/false)
     func getFeatureFlag(key: String, defaultValue: Bool) async -> Bool
 
     /// Get a feature flag payload value as a String
     /// - Parameter key: The feature flag key
-    /// - Returns: The payload value as a String, or empty string if not found
+    /// - Returns: The payload value as a String, or nil if there is no payload for `key`
+    ///   or the payload is not a String. An empty return value means the payload itself
+    ///   was the empty string.
     func getFeatureFlagPayloadString(key: String) async -> String?
 
     /// Reset the current user session

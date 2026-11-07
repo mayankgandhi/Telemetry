@@ -46,9 +46,9 @@ public actor MockTelemetryProvider: TelemetryProvider {
 
     public func getFeatureFlagPayloadString(key: String) async -> String? {
         guard let payload = featureFlagPayloads[key] else {
-            return ""
+            return nil
         }
-        return payload as? String ?? ""
+        return payload as? String
     }
 
     public func reset() async {

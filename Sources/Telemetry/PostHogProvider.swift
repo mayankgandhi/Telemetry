@@ -103,23 +103,46 @@ public final class PostHogProvider: TelemetryProvider, Sendable {
     public nonisolated func getFeatureFlag(key: String, defaultValue: Bool) async -> Bool {
         await ensureConfigured()
 
-        // Feature flag access is synchronous and thread-safe
-        return PostHogSDK.shared.isFeatureEnabled(key) ?? defaultValue
+        // `isFeatureEnabled` returns a non-optional `Bool`: it reports `false` both for a
+        // flag that is genuinely off and for one it could not resolve at all (unknown key,
+        // or flags not yet loaded from the server). Coalescing its result could therefore
+        // never reach `defaultValue` — the compiler flagged the right-hand side as unused.
+        // `getFeatureFlagResult` returns nil in exactly those unresolvable cases, which is
+        // what `defaultValue` is for.
+        //
+        // Feature flag access is synchronous and thread-safe.
+        guard let result = PostHogSDK.shared.getFeatureFlagResult(key) else {
+            return defaultValue
+        }
+
+        // `enabled` is already true for a multivariate flag that resolved to a variant.
+        return result.enabled
     }
 
     public nonisolated func getFeatureFlagPayload(key: String) async -> Any? {
         await ensureConfigured()
 
-        // Feature flag payload access is synchronous and thread-safe
-        return PostHogSDK.shared.getFeatureFlagPayload(key)
+        // `getFeatureFlagPayload` is deprecated. It is defined as exactly this call, so
+        // `sendFeatureFlagEvent: false` keeps the lookup silent as before — reading a
+        // payload must not start emitting $feature_flag_called events.
+        //
+        // Feature flag payload access is synchronous and thread-safe.
+        return PostHogSDK.shared.getFeatureFlagResult(key, sendFeatureFlagEvent: false)?.payload
     }
 
     public nonisolated func getFeatureFlagPayloadString(key: String) async -> String? {
         await ensureConfigured()
 
-        // Get payload and convert to string if possible
-        guard let payload = PostHogSDK.shared.getFeatureFlagPayload(key) else {
-            return ""
+        // Get payload and convert to string if possible. An absent payload is nil, not ""
+        // — the return type is `String?`, so nil is how "no value" is spelled. Returning
+        // "" here made a missing payload indistinguishable from one set to the empty
+        // string, while a present-but-non-String payload returned nil: the two cases were
+        // the wrong way round.
+        //
+        // `sendFeatureFlagEvent: false` matches the deprecated `getFeatureFlagPayload`
+        // this replaces, so event volume is unchanged.
+        guard let payload = PostHogSDK.shared.getFeatureFlagResult(key, sendFeatureFlagEvent: false)?.payload else {
+            return nil
         }
 
         return payload as? String

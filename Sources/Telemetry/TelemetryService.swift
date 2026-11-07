@@ -190,7 +190,9 @@ public final class TelemetryService: Sendable {
     /// Get a feature flag value (async, blocks until result is available)
     /// - Parameters:
     ///   - key: Feature flag key
-    ///   - defaultValue: Default value if flag is not found
+    ///   - defaultValue: Value to return when the flag cannot be resolved — no provider
+    ///     configured, an unknown key, or flags still loading. A flag that resolves to
+    ///     `false` returns `false`, not `defaultValue`.
     /// - Returns: Feature flag value (true/false)
     /// - Note: This method blocks waiting for the result. Consider caching flag values for performance.
     public func getFeatureFlag(
@@ -210,12 +212,13 @@ public final class TelemetryService: Sendable {
 
     /// Get a feature flag payload value as a String (async, blocks until result is available)
     /// - Parameter key: Feature flag key
-    /// - Returns: Feature flag payload value as String, or empty string if not found
+    /// - Returns: The payload as a String, or nil if there is no payload for `key`, the
+    ///   payload is not a String, or no provider is configured.
     /// - Note: This method blocks waiting for the result. Consider caching payload values for performance.
     public func getFeatureFlagPayloadString(key: String) async -> String? {
         guard let provider = await getProvider() else {
             logWarning("Provider not configured. Call configure(provider:) first.")
-            return ""
+            return nil
         }
 
         return await provider.getFeatureFlagPayloadString(key: key)
